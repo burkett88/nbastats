@@ -12,12 +12,24 @@ else:
     players = player.PlayerList().info()
     players.to_csv(players_path)
 
+#%%
 # id, name, years played, team, team_id, team_code 
-players
+person_id_list=players['PERSON_ID'].unique()[:10] #grab just 10 players
 
 #%%
-# Game Logs, basic stats
-player.PlayerGameLogs(players.loc[0,"PERSON_ID"]).info().iloc[0]
+alllogs=pd.DataFrame()
+
+#%%
+df=player.PlayerGameLogs(i).info()
+
+
+
+#%%
+for i in person_id_list:
+    df=player.PlayerGameLogs(i).info()
+    df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
+    df['30DAYS_DATE']=df['GAME_DATE']-pd.to_timedelta(30, unit='d')
+    alllogs=alllogs.append(df)
 
 #%%
 # Per ShotType/Game
