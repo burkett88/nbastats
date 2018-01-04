@@ -22,8 +22,6 @@ alllogs=pd.DataFrame()
 #%%
 df=player.PlayerGameLogs(i).info()
 
-
-
 #%%
 for i in person_id_list:
     df=player.PlayerGameLogs(i).info()
