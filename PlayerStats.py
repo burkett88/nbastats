@@ -15,20 +15,29 @@ else:
 #%%
 # id, name, years played, team, team_id, team_code 
 person_id_list=players['PERSON_ID'].unique()[:10] #grab just 10 players
-
+stats=['MIN', 'FGM',
+       'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT',
+       'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS',
+       'PLUS_MINUS']
 #%%
 alllogs=pd.DataFrame()
 
 #%%
-df=player.PlayerGameLogs(i).info()
+df=player.PlayerGameLogs(person_id_list[0]).info()
 
 #%%
 for i in person_id_list:
     df=player.PlayerGameLogs(i).info()
     df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
-    df['30DAYS_DATE']=df['GAME_DATE']-pd.to_timedelta(30, unit='d')
+    df=df.set_index('GAME_DATE')
+    rollingPeriod=7
+    for stat in stats:
+        df[str(rollingPeriod) + stat]=df[stat].rolling(rollingPeriod).mean()
     alllogs=alllogs.append(df)
 
+#%%
+alllogs
+#df
 #%%
 # Per ShotType/Game
 player.PlayerShotTracking(players.loc[0,"PERSON_ID"]).general_shooting()
