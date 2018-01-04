@@ -19,22 +19,28 @@ stats=['MIN', 'FGM',
        'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT',
        'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS',
        'PLUS_MINUS']
-#%%
-alllogs=pd.DataFrame()
 
 #%%
+alllogs = []
 for i in person_id_list:
     df=player.PlayerGameLogs(i).info()
     df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
     df=df.set_index('GAME_DATE')
-    rollingPeriod=7
-    for stat in stats:
-        df[str(rollingPeriod) + stat]=df[stat].rolling(rollingPeriod).mean()
-    alllogs=alllogs.append(df)
+    df_cols = [df]
+    keys = [1]
+    for rollingPeriod in (7,):
+        dfr = df[stats].apply(lambda col: col.rolling(rollingPeriod).mean())
+        df_cols.append(dfr)
+        keys.append(rollingPeriod)
+    df = pd.concat(df_cols,keys=keys,names=["RollingPeriod","Stat"],axis=1)
+    alllogs.append(df)
+
+alllogs = pd.concat(alllogs)
+alllogs
 
 #%%
 alllogs
-#df
+
 #%%
 # Per ShotType/Game
 player.PlayerShotTracking(players.loc[0,"PERSON_ID"]).general_shooting()
