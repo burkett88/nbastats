@@ -23,9 +23,6 @@ stats=['MIN', 'FGM',
 alllogs=pd.DataFrame()
 
 #%%
-df=player.PlayerGameLogs(person_id_list[0]).info()
-
-#%%
 for i in person_id_list:
     df=player.PlayerGameLogs(i).info()
     df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
