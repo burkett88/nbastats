@@ -1,6 +1,10 @@
 #%%
 from os.path import exists
 import pandas as pd
+from tqdm import tqdm
+import sys
+from time import sleep
+from random import random
 
 from nba_py import team, constants, player, game
 
@@ -19,15 +23,31 @@ stats=['MIN', 'FGM',
        'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT',
        'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS',
        'PLUS_MINUS']
-person_id_list
 
-#%% time
-alllogs = []
-for i in person_id_list:
-    df=player.PlayerGameLogs(i).info()
-    df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
-    # Make all the ID's indexes
-    df=df.set_index(['GAME_DATE','SEASON_ID','Game_ID','Player_ID'])
+#%%
+gamelog_path = "gamelogs.csv"
+if exists(gamelog_path):
+    gamelogs = pd.read_csv(gamelog_path,index_col=[0,1,2,3])
+else:
+    n = len(person_id_list)
+    dfs = []
+    for i,pid in enumerate(person_id_list):
+        sleep(random())
+        if i > 0 and i % 5 == 0:
+            sys.stderr.write("{} of {} Done\r".format(i,n))
+        df=player.PlayerGameLogs(pid).info()
+        df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
+        # Make all the ID's indexes
+        df=df.set_index(['GAME_DATE','SEASON_ID','Game_ID','Player_ID'])
+        dfs.append(df)
+    sys.stderr.write("{} of {} Done\n".format(n,n))
+    gamelogs = pd.concat(dfs)
+    gamelogs.to_csv(gamelog_path)
+gamelogs
+#%%
+
+dfs = []
+for player_id,df in gamelogs.groupby("Player_ID"):
     # Only bring along the stats we are using for averaging for now
     df = df[stats]
     # This was slow, so commented out. Instead should do a single call to get a list of all the game scores and use pandas to find team id
@@ -39,16 +59,15 @@ for i in person_id_list:
         df_cols.append(dfr)
         keys.append(rollingPeriod)
     df = pd.concat(df_cols,keys=keys,names=["RollingPeriod","Stat"],axis=1)
-    alllogs.append(df)
-#%%
-alllogs = pd.concat(alllogs)
-alllogs
+    dfs.append(df)
+gamelogs_rolling = pd.concat(dfs)
+gamelogs_rolling
 
 #%%
 # Flattened column names
-alllogs_flat = alllogs.copy()
-alllogs_flat.columns = ["{}_{}".format(b,a) for a,b in alllogs_flat.columns.values]
-alllogs_flat
+gamelogs_rolling_flat = gamelogs_rolling.copy()
+gamelogs_rolling_flat.columns = ["{}_{}".format(b,a) for a,b in gamelogs_rolling_flat.columns.values]
+gamelogs_rolling_flat
 
 #%%
 visitingTeamid = game.BoxscoreSummary("0021601230").game_summary()['VISITOR_TEAM_ID']
