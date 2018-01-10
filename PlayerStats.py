@@ -14,23 +14,28 @@ else:
 
 #%%
 # id, name, years played, team, team_id, team_code 
-person_id_list=players['PERSON_ID'].unique()[:15] #grab just 10 players for now
+person_id_list=players['PERSON_ID'].unique()
 stats=['MIN', 'FGM',
        'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT',
        'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS',
        'PLUS_MINUS']
+person_id_list
 
-#%%
+#%% time
 alllogs = []
 for i in person_id_list:
     df=player.PlayerGameLogs(i).info()
     df['GAME_DATE']=pd.to_datetime(df['GAME_DATE']) 
-    df=df.set_index('GAME_DATE')
-    df['OpposingTeam']=df['Game_ID'].apply(lambda x: game.BoxscoreSummary(x).game_summary()['VISITOR_TEAM_ID'])
+    # Make all the ID's indexes
+    df=df.set_index(['GAME_DATE','SEASON_ID','Game_ID','Player_ID'])
+    # Only bring along the stats we are using for averaging for now
+    df = df[stats]
+    # This was slow, so commented out. Instead should do a single call to get a list of all the game scores and use pandas to find team id
+    # df['OpposingTeam']=df['Game_ID'].apply(lambda x: game.BoxscoreSummary(x).game_summary()['VISITOR_TEAM_ID'])
     df_cols = [df]
     keys = [1]
-    for rollingPeriod in (7,):
-        dfr = df[stats].apply(lambda col: col.rolling(rollingPeriod).mean())
+    for rollingPeriod in (7,14):
+        dfr = df.apply(lambda col: col.rolling(rollingPeriod).mean())
         df_cols.append(dfr)
         keys.append(rollingPeriod)
     df = pd.concat(df_cols,keys=keys,names=["RollingPeriod","Stat"],axis=1)
@@ -38,6 +43,13 @@ for i in person_id_list:
 #%%
 alllogs = pd.concat(alllogs)
 alllogs
+
+#%%
+# Flattened column names
+alllogs_flat = alllogs.copy()
+alllogs_flat.columns = ["{}_{}".format(b,a) for a,b in alllogs_flat.columns.values]
+alllogs_flat
+
 #%%
 visitingTeamid = game.BoxscoreSummary("0021601230").game_summary()['VISITOR_TEAM_ID']
 print(game.BoxscoreSummary("0021601230").game_summary())
